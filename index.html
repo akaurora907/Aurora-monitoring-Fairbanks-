@@ -70,6 +70,8 @@ main{max-width:1100px;margin:auto;padding:16px}
 
 .feed p{font-size:12px;color:#b9c9d9;line-height:1.5;margin:5px 0}
 
+.feed a{color:#75dcff;text-decoration:underline;text-underline-offset:2px}
+
 .feed-status{font-weight:bold}
 
 .fresh{color:#8dffc5}
@@ -204,13 +206,17 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>AE · Auroral Electrojet</h2>
 
-<div class="value">External feed</div>
+<div class="value">Live chart</div>
 
 <div class="unit">AE, AU and AL indices</div>
 
-<div class="rating">Open Kyoto live data</div>
+<div class="rating">Kyoto real-time data</div>
 
-<p class="muted"><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank" rel="noopener">View real-time AE index ↗</a></p>
+<p class="muted">AE measures auroral electrojet activity. A more negative AL can indicate strengthening westward electrojet activity and substorm development.</p>
+
+<p><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank" rel="noopener">Open Kyoto real-time AE data ↗</a></p>
+
+<p class="muted">Numerical AE readings are not currently integrated into this dashboard.</p>
 
 </div>
 
@@ -220,7 +226,7 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h3>📡 Data feed timestamps</h3>
 
-<p class="muted">Source time is when the provider says the reading or forecast was recorded. Fetch time is when this dashboard last successfully retrieved that feed. They are not necessarily the same.</p>
+<p class="muted">Tap either timestamp to open its original data source. Source time is when the provider says the reading or forecast was recorded. Fetch time is when this dashboard last retrieved the feed.</p>
 
 <div class="feed-grid">
 
@@ -294,6 +300,8 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <p><b>OVATION:</b> A model forecast, not a guarantee of visible aurora at your location.</p>
 
+<p><b>AE:</b> A measure of auroral electrojet activity. AL becoming more negative can help identify substorm development.</p>
+
 </section>
 
 <section>
@@ -324,13 +332,13 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 const urls={
 
- mag:"https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
+mag:"https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
 
- wind:"https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
+wind:"https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
 
- kp:"https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
+kp:"https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
 
- ovation:"https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+ovation:"https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 
 };
 
@@ -338,467 +346,487 @@ const $=id=>document.getElementById(id);
 
 const alaskaTime=value=>{
 
- if(!value)return "Timestamp unavailable";
+if(!value)return "Timestamp unavailable";
 
- const d=new Date(value);
+const d=new Date(value);
 
- if(Number.isNaN(d.getTime()))return "Timestamp unavailable";
+if(Number.isNaN(d.getTime()))return "Timestamp unavailable";
 
- return d.toLocaleString("en-US",{
+return d.toLocaleString("en-US",{
 
-  timeZone:"America/Anchorage",
+timeZone:"America/Anchorage",
 
-  month:"short",day:"numeric",year:"numeric",
+month:"short",day:"numeric",year:"numeric",
 
-  hour:"numeric",minute:"2-digit",second:"2-digit",
+hour:"numeric",minute:"2-digit",second:"2-digit",
 
-  timeZoneName:"short"
+timeZoneName:"short"
 
- });
+});
 
 };
 
 const num=v=>{
 
- if(v===null||v===undefined||v==="")return null;
+if(v===null||v===undefined||v==="")return null;
 
- const n=Number(v);
+const n=Number(v);
 
- return Number.isFinite(n)?n:null;
+return Number.isFinite(n)?n:null;
 
 };
 
 const latest=rows=>{
 
- if(!Array.isArray(rows)||!rows.length)return null;
+if(!Array.isArray(rows)||!rows.length)return null;
 
- return rows[rows.length-1];
+return rows[rows.length-1];
 
 };
 
 const sourceTime=r=>{
 
- if(!r)return null;
+if(!r)return null;
 
- return r.time_tag||r.time||r.datetime||r.timestamp||r.ObservationTime||r.observation_time||null;
+return r.time_tag||r.time||r.datetime||r.timestamp||
+
+r.ObservationTime||r.observation_time||null;
 
 };
 
 const show=(id,v,d=1)=>{
 
- $(id).textContent=v===null?"--":v.toFixed(d);
+$(id).textContent=v===null?"--":v.toFixed(d);
 
 };
 
 const setRating=(id,label,kind="")=>{
 
- $(id).textContent=label;
+$(id).textContent=label;
 
- $(id).className="rating "+kind;
+$(id).className="rating "+kind;
 
 };
 
 function legend(id,levels,active){
 
- $(id).innerHTML=levels.map((l,i)=>
+$(id).innerHTML=levels.map((l,i)=>
 
-  `<div class="level ${l.kind} ${i===active?"active":""}">${l.label}${i===active?" · NOW":""}</div>`
+`<div class="level ${l.kind} ${i===active?"active":""}">${l.label}${i===active?" · NOW":""}</div>`
 
- ).join("");
+).join("");
 
 }
 
 function rangeIndex(v,bounds){
 
- if(v===null)return -1;
+if(v===null)return -1;
 
- for(let i=0;i<bounds.length;i++){
+for(let i=0;i<bounds.length;i++){
 
-  if(bounds[i](v))return i;
+if(bounds[i](v))return i;
 
- }
+}
 
- return bounds.length-1;
+return bounds.length-1;
 
 }
 
 function updateBz(v){
 
- show("bz",v);
+show("bz",v);
 
- const levels=[
+const levels=[
 
-  {label:"Northward",kind:"bad"},
+{label:"Northward",kind:"bad"},
 
-  {label:"Slight south",kind:"warn"},
+{label:"Slight south",kind:"warn"},
 
-  {label:"Favorable",kind:"good"},
+{label:"Favorable",kind:"good"},
 
-  {label:"Strong south",kind:"good"}
+{label:"Strong south",kind:"good"}
 
- ];
+];
 
- const i=rangeIndex(v,[x=>x>=0,x=>x>-5,x=>x>-10,x=>true]);
+const i=rangeIndex(v,[x=>x>=0,x=>x>-5,x=>x>-10,x=>true]);
 
- legend("bzLegend",levels,i);
+legend("bzLegend",levels,i);
 
- if(v===null)setRating("bzRating","No data");
+if(v===null)setRating("bzRating","No data");
 
- else if(v<=-10)setRating("bzRating","Excellent southward","good");
+else if(v<=-10)setRating("bzRating","Excellent southward","good");
 
- else if(v<=-5)setRating("bzRating","Favorable southward","good");
+else if(v<=-5)setRating("bzRating","Favorable southward","good");
 
- else if(v<0)setRating("bzRating","Slightly southward","warn");
+else if(v<0)setRating("bzRating","Slightly southward","warn");
 
- else setRating("bzRating","Northward / less favorable","bad");
+else setRating("bzRating","Northward / less favorable","bad");
 
 }
 
 function updateBy(v){
 
- show("by",v);
+show("by",v);
 
- const levels=[
+const levels=[
 
-  {label:"Negative",kind:"neutral"},
+{label:"Negative",kind:"neutral"},
 
-  {label:"Near zero",kind:"neutral"},
+{label:"Near zero",kind:"neutral"},
 
-  {label:"Positive",kind:"neutral"}
+{label:"Positive",kind:"neutral"}
 
- ];
+];
 
- legend("byLegend",levels,rangeIndex(v,[x=>x< -2,x=>x<=2,x=>true]));
+legend("byLegend",levels,rangeIndex(v,[x=>x< -2,x=>x<=2,x=>true]));
 
- setRating("byRating",v===null?"No data":v< -2?"Negative By":v<=2?"Near zero By":"Positive By");
+setRating("byRating",v===null?"No data":v< -2?"Negative By":v<=2?"Near zero By":"Positive By");
 
 }
 
 function updateBt(v){
 
- show("bt",v);
+show("bt",v);
 
- const levels=[
+const levels=[
 
-  {label:"Weak <5",kind:"neutral"},
+{label:"Weak <5",kind:"neutral"},
 
-  {label:"Moderate 5-10",kind:"neutral"},
+{label:"Moderate 5-10",kind:"neutral"},
 
-  {label:"Strong 10-20",kind:"good"},
+{label:"Strong 10-20",kind:"good"},
 
-  {label:"Very strong >20",kind:"good"}
+{label:"Very strong >20",kind:"good"}
 
- ];
+];
 
- legend("btLegend",levels,rangeIndex(v,[x=>x<5,x=>x<10,x=>x<20,x=>true]));
+legend("btLegend",levels,rangeIndex(v,[x=>x<5,x=>x<10,x=>x<20,x=>true]));
 
- setRating("btRating",v===null?"No data":v>=20?"Very strong field":v>=10?"Strong field":v>=5?"Moderate field":"Weak field");
+setRating("btRating",v===null?"No data":v>=20?"Very strong field":v>=10?"Strong field":v>=5?"Moderate field":"Weak field");
 
 }
 
 function updateSpeed(v){
 
- show("speed",v,0);
+show("speed",v,0);
 
- const levels=[
+const levels=[
 
-  {label:"Slow <350",kind:"bad"},
+{label:"Slow <350",kind:"bad"},
 
-  {label:"Moderate 350-500",kind:"warn"},
+{label:"Moderate 350-500",kind:"warn"},
 
-  {label:"Fast 500-600",kind:"good"},
+{label:"Fast 500-600",kind:"good"},
 
-  {label:"Very fast ≥600",kind:"good"}
+{label:"Very fast ≥600",kind:"good"}
 
- ];
+];
 
- legend("speedLegend",levels,rangeIndex(v,[x=>x<350,x=>x<500,x=>x<600,x=>true]));
+legend("speedLegend",levels,rangeIndex(v,[x=>x<350,x=>x<500,x=>x<600,x=>true]));
 
- if(v===null)setRating("speedRating","No data");
+if(v===null)setRating("speedRating","No data");
 
- else if(v>=600)setRating("speedRating","Very fast","good");
+else if(v>=600)setRating("speedRating","Very fast","good");
 
- else if(v>=500)setRating("speedRating","Fast","good");
+else if(v>=500)setRating("speedRating","Fast","good");
 
- else if(v>=350)setRating("speedRating","Moderate","warn");
+else if(v>=350)setRating("speedRating","Moderate","warn");
 
- else setRating("speedRating","Slow","bad");
+else setRating("speedRating","Slow","bad");
 
 }
 
 function updateDensity(v){
 
- show("density",v);
+show("density",v);
 
- const levels=[
+const levels=[
 
-  {label:"Low <5",kind:"bad"},
+{label:"Low <5",kind:"bad"},
 
-  {label:"Moderate 5-10",kind:"warn"},
+{label:"Moderate 5-10",kind:"warn"},
 
-  {label:"Elevated 10-20",kind:"good"},
+{label:"Elevated 10-20",kind:"good"},
 
-  {label:"High ≥20",kind:"good"}
+{label:"High ≥20",kind:"good"}
 
- ];
+];
 
- legend("densityLegend",levels,rangeIndex(v,[x=>x<5,x=>x<10,x=>x<20,x=>true]));
+legend("densityLegend",levels,rangeIndex(v,[x=>x<5,x=>x<10,x=>x<20,x=>true]));
 
- if(v===null)setRating("densityRating","No data");
+if(v===null)setRating("densityRating","No data");
 
- else if(v>=20)setRating("densityRating","Very elevated","good");
+else if(v>=20)setRating("densityRating","Very elevated","good");
 
- else if(v>=10)setRating("densityRating","Elevated","good");
+else if(v>=10)setRating("densityRating","Elevated","good");
 
- else if(v>=5)setRating("densityRating","Moderate","warn");
+else if(v>=5)setRating("densityRating","Moderate","warn");
 
- else setRating("densityRating","Low","bad");
+else setRating("densityRating","Low","bad");
 
 }
 
 function updateKp(v){
 
- show("kp",v);
+show("kp",v);
 
- const levels=[
+const levels=[
 
-  {label:"Quiet <3",kind:"bad"},
+{label:"Quiet <3",kind:"bad"},
 
-  {label:"Unsettled 3-5",kind:"warn"},
+{label:"Unsettled 3-5",kind:"warn"},
 
-  {label:"Active 5-7",kind:"good"},
+{label:"Active 5-7",kind:"good"},
 
-  {label:"Storm ≥7",kind:"good"}
+{label:"Storm ≥7",kind:"good"}
 
- ];
+];
 
- legend("kpLegend",levels,rangeIndex(v,[x=>x<3,x=>x<5,x=>x<7,x=>true]));
+legend("kpLegend",levels,rangeIndex(v,[x=>x<3,x=>x<5,x=>x<7,x=>true]));
 
- if(v===null)setRating("kpRating","No data");
+if(v===null)setRating("kpRating","No data");
 
- else if(v>=7)setRating("kpRating","Strong geomagnetic storm","good");
+else if(v>=7)setRating("kpRating","Strong geomagnetic storm","good");
 
- else if(v>=5)setRating("kpRating","Active","good");
+else if(v>=5)setRating("kpRating","Active","good");
 
- else if(v>=3)setRating("kpRating","Unsettled","warn");
+else if(v>=3)setRating("kpRating","Unsettled","warn");
 
- else setRating("kpRating","Quiet","bad");
+else setRating("kpRating","Quiet","bad");
 
 }
 
 function updateOvation(v){
 
- show("ovation",v,0);
+show("ovation",v,0);
 
- const levels=[
+const levels=[
 
-  {label:"Low <20%",kind:"bad"},
+{label:"Low <20%",kind:"bad"},
 
-  {label:"Moderate 20-50%",kind:"warn"},
+{label:"Moderate 20-50%",kind:"warn"},
 
-  {label:"High ≥50%",kind:"good"}
+{label:"High ≥50%",kind:"good"}
 
- ];
+];
 
- legend("ovationLegend",levels,rangeIndex(v,[x=>x<20,x=>x<50,x=>true]));
+legend("ovationLegend",levels,rangeIndex(v,[x=>x<20,x=>x<50,x=>true]));
 
- if(v===null)setRating("ovationRating","No data");
+if(v===null)setRating("ovationRating","No data");
 
- else if(v>=50)setRating("ovationRating","Higher forecast probability","good");
+else if(v>=50)setRating("ovationRating","Higher forecast probability","good");
 
- else if(v>=20)setRating("ovationRating","Moderate forecast probability","warn");
+else if(v>=20)setRating("ovationRating","Moderate forecast probability","warn");
 
- else setRating("ovationRating","Lower forecast probability","bad");
+else setRating("ovationRating","Lower forecast probability","bad");
 
 }
 
 async function getJSON(url){
 
- const response=await fetch(url,{cache:"no-store"});
+const response=await fetch(url,{cache:"no-store"});
 
- if(!response.ok)throw new Error("HTTP "+response.status);
+if(!response.ok)throw new Error("HTTP "+response.status);
 
- return response.json();
+return response.json();
 
 }
 
-function feedDisplay(prefix,source,fetched,staleMinutes){
+function linkedTimestamp(id,value,url){
 
- $(prefix+"Source").textContent=source?alaskaTime(source):"Not supplied by source";
+const a=document.createElement("a");
 
- $(prefix+"Fetch").textContent=alaskaTime(fetched);
+a.href=url;
 
- const state=$(prefix+"State");
+a.target="_blank";
 
- if(!source){
+a.rel="noopener";
 
-  state.textContent="Timestamp unavailable from provider";
+a.textContent=value;
 
-  state.className="feed-status unknown";
+$(id).replaceChildren(a);
 
-  return;
+}
 
- }
+function feedDisplay(prefix,source,fetched,staleMinutes,url){
 
- const age=(Date.now()-new Date(source).getTime())/60000;
+linkedTimestamp(prefix+"Source",
 
- if(!Number.isFinite(age)){
+source?alaskaTime(source):"Timestamp unavailable",url);
 
-  state.textContent="Could not interpret source timestamp";
+linkedTimestamp(prefix+"Fetch",alaskaTime(fetched),url);
 
-  state.className="feed-status unknown";
+const state=$(prefix+"State");
 
- }else if(age>staleMinutes){
+if(!source){
 
-  state.textContent="⚠ Source reading may be stale ("+Math.round(age)+" min old)";
+state.textContent="Timestamp unavailable from provider";
 
-  state.className="feed-status stale";
+state.className="feed-status unknown";
 
- }else{
+return;
 
-  state.textContent="✓ Recent source reading ("+Math.max(0,Math.round(age))+" min old)";
+}
 
-  state.className="feed-status fresh";
+const age=(Date.now()-new Date(source).getTime())/60000;
 
- }
+if(!Number.isFinite(age)){
+
+state.textContent="Could not interpret source timestamp";
+
+state.className="feed-status unknown";
+
+}else if(age>staleMinutes){
+
+state.textContent="⚠ Source reading may be stale ("+Math.round(age)+" min old)";
+
+state.className="feed-status stale";
+
+}else{
+
+state.textContent="✓ Recent source reading ("+Math.max(0,Math.round(age))+" min old)";
+
+state.className="feed-status fresh";
+
+}
 
 }
 
 function feedError(prefix,message){
 
- $(prefix+"State").textContent="⚠ Feed unavailable: "+message;
+$(prefix+"State").textContent="⚠ Feed unavailable: "+message;
 
- $(prefix+"State").className="feed-status stale";
+$(prefix+"State").className="feed-status stale";
 
 }
 
 async function update(){
 
- const errors=[];
+const errors=[];
 
- const fetchedAt=new Date().toISOString();
+try{
 
- try{
+const rows=await getJSON(urls.mag);
 
-  const rows=await getJSON(urls.mag);
+const r=latest(rows);
 
-  const r=latest(rows);
+if(!r)throw new Error("No magnetic readings");
 
-  if(!r)throw new Error("No magnetic readings");
+updateBz(num(r.bz_gsm));
 
-  updateBz(num(r.bz_gsm));
+updateBy(num(r.by_gsm));
 
-  updateBy(num(r.by_gsm));
+updateBt(num(r.bt));
 
-  updateBt(num(r.bt));
+feedDisplay("mag",sourceTime(r),new Date().toISOString(),5,urls.mag);
 
-  feedDisplay("mag",sourceTime(r),new Date().toISOString(),5);
+}catch(e){
 
- }catch(e){
+errors.push("Magnetic field");
 
-  errors.push("Magnetic field");
+feedError("mag",e.message);
 
-  feedError("mag",e.message);
+}
 
- }
+try{
 
- try{
+const rows=await getJSON(urls.wind);
 
-  const rows=await getJSON(urls.wind);
+const r=latest(rows);
 
-  const r=latest(rows);
+if(!r)throw new Error("No solar-wind readings");
 
-  if(!r)throw new Error("No solar-wind readings");
+updateSpeed(num(r.proton_speed));
 
-  updateSpeed(num(r.proton_speed));
+updateDensity(num(r.proton_density));
 
-  updateDensity(num(r.proton_density));
+feedDisplay("wind",sourceTime(r),new Date().toISOString(),5,urls.wind);
 
-  feedDisplay("wind",sourceTime(r),new Date().toISOString(),5);
+}catch(e){
 
- }catch(e){
+errors.push("Solar wind");
 
-  errors.push("Solar wind");
+feedError("wind",e.message);
 
-  feedError("wind",e.message);
+}
 
- }
+try{
 
- try{
+const rows=await getJSON(urls.kp);
 
-  const rows=await getJSON(urls.kp);
+const r=latest(rows);
 
-  const r=latest(rows);
+if(!r)throw new Error("No Kp readings");
 
-  if(!r)throw new Error("No Kp readings");
+updateKp(num(r.kp_index??r.estimated_kp??r.kp));
 
-  updateKp(num(r.kp_index??r.estimated_kp??r.kp));
+feedDisplay("kp",sourceTime(r),new Date().toISOString(),10,urls.kp);
 
-  feedDisplay("kp",sourceTime(r),new Date().toISOString(),10);
+}catch(e){
 
- }catch(e){
+errors.push("Kp");
 
-  errors.push("Kp");
+feedError("kp",e.message);
 
-  feedError("kp",e.message);
+}
 
- }
+try{
 
- try{
+const data=await getJSON(urls.ovation);
 
-  const data=await getJSON(urls.ovation);
+const coords=data.coordinates||[];
 
-  const coords=data.coordinates||[];
+const targetLon=212.28;
 
-  const targetLon=212.28;
+const targetLat=64.84;
 
-  const targetLat=64.84;
+let closest=null,best=Infinity;
 
-  let closest=null,best=Infinity;
+for(const p of coords){
 
-  for(const p of coords){
+if(!Array.isArray(p)||p.length<3)continue;
 
-   if(!Array.isArray(p)||p.length<3)continue;
+const lon=num(p[0]),lat=num(p[1]),prob=num(p[2]);
 
-   const lon=num(p[0]),lat=num(p[1]),prob=num(p[2]);
+if(lon===null||lat===null||prob===null)continue;
 
-   if(lon===null||lat===null||prob===null)continue;
+const d=(lon-targetLon)**2+(lat-targetLat)**2;
 
-   const d=(lon-targetLon)**2+(lat-targetLat)**2;
+if(d<best){best=d;closest=p;}
 
-   if(d<best){best=d;closest=p;}
+}
 
-  }
+if(!closest)throw new Error("No nearby forecast point");
 
-  if(!closest)throw new Error("No nearby forecast point");
+updateOvation(num(closest[2]));
 
-  updateOvation(num(closest[2]));
+const forecastTime=data.ForecastTime||data.forecast_time||
 
-  const forecastTime=data.ForecastTime||data.forecast_time||data.ObservationTime||null;
+data.ObservationTime||null;
 
-  $("ovationTime").textContent=forecastTime?
+$("ovationTime").textContent=forecastTime?
 
-   "Forecast time: "+alaskaTime(forecastTime):
+"Forecast time: "+alaskaTime(forecastTime):
 
-   "Nearest forecast grid point. Forecast timestamp not supplied.";
+"Nearest forecast grid point. Forecast timestamp not supplied.";
 
-  feedDisplay("ov",forecastTime,new Date().toISOString(),120);
+feedDisplay("ov",forecastTime,new Date().toISOString(),120,urls.ovation);
 
- }catch(e){
+}catch(e){
 
-  errors.push("OVATION");
+errors.push("OVATION");
 
-  feedError("ov",e.message);
+feedError("ov",e.message);
 
- }
+}
 
- $("status").textContent=errors.length?
+$("status").textContent=errors.length?
 
-  "Some feeds could not be loaded: "+errors.join(", ")+". Other readings may still be available.":
+"Some feeds could not be loaded: "+errors.join(", ")+". Other readings may still be available.":
 
-  "All dashboard feeds retrieved. Check each feed timestamp below for source freshness.";
+"All dashboard feeds retrieved. Check each feed timestamp below for source freshness.";
 
- $("updated").textContent="Dashboard refresh completed: "+alaskaTime(new Date().toISOString());
+$("updated").textContent="Dashboard refresh completed: "+alaskaTime(new Date().toISOString());
 
 }
 
