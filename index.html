@@ -24,13 +24,13 @@ h1{margin:0;color:#75dcff;font-size:27px}
 
 header p{margin:8px 0 0;color:#b9c9d9}
 
-main{max-width:1050px;margin:auto;padding:16px}
+main{max-width:1100px;margin:auto;padding:16px}
 
 .status{padding:12px;background:#132b40;border-radius:10px;margin-bottom:16px;color:#b9d8e8}
 
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
 
-.card{background:#122338;border:1px solid #29445e;border-radius:12px;padding:16px;min-height:135px}
+.card{background:#122338;border:1px solid #29445e;border-radius:12px;padding:16px;min-width:0}
 
 .card h2{font-size:15px;color:#a9c6dc;margin:0 0 12px}
 
@@ -46,9 +46,39 @@ main{max-width:1050px;margin:auto;padding:16px}
 
 .bad{background:#71313b;color:#ffd0d0}
 
-.muted{color:#a9c0d2;font-size:13px}
+.muted{color:#a9c0d2;font-size:12px;line-height:1.5}
 
-section{margin-top:20px}
+.legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:13px}
+
+.level{padding:7px 6px;border-radius:6px;background:#26384a;color:#8294a5;font-size:11px;text-align:center;border:1px solid transparent}
+
+.level.active{color:#fff;font-weight:bold;border:1px solid #fff;filter:brightness(1.35)}
+
+.level.good.active{background:#155a45}
+
+.level.warn.active{background:#70531a}
+
+.level.bad.active{background:#71313b}
+
+.level.neutral.active{background:#31516b}
+
+.feed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+
+.feed{background:#10243a;border:1px solid #29445e;border-radius:10px;padding:13px}
+
+.feed h4{margin:0 0 8px;color:#75dcff;font-size:14px}
+
+.feed p{font-size:12px;color:#b9c9d9;line-height:1.5;margin:5px 0}
+
+.feed-status{font-weight:bold}
+
+.fresh{color:#8dffc5}
+
+.stale{color:#ffb0a8}
+
+.unknown{color:#ffe5a0}
+
+section{margin-top:22px}
 
 h3{color:#75dcff}
 
@@ -80,13 +110,13 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>IMF Bz · GSM</h2>
 
-<div class="value" id="bz">--</div>
-
-<div class="unit">nT</div>
+<div class="value" id="bz">--</div><div class="unit">nT</div>
 
 <div class="rating" id="bzRating">Waiting for data</div>
 
-<p class="muted">Southward (negative) Bz is generally favorable.</p>
+<p class="muted">Sustained southward (negative) Bz is generally favorable.</p>
+
+<div class="legend" id="bzLegend"></div>
 
 </div>
 
@@ -94,13 +124,13 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>IMF By · GSM</h2>
 
-<div class="value" id="by">--</div>
-
-<div class="unit">nT</div>
+<div class="value" id="by">--</div><div class="unit">nT</div>
 
 <div class="rating" id="byRating">Waiting for data</div>
 
-<p class="muted">Helps describe the orientation of the magnetic field.</p>
+<p class="muted">Describes the east-west direction of the interplanetary magnetic field. Not a direct aurora score.</p>
+
+<div class="legend" id="byLegend"></div>
 
 </div>
 
@@ -108,13 +138,13 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>Total Magnetic Field · Bt</h2>
 
-<div class="value" id="bt">--</div>
-
-<div class="unit">nT</div>
+<div class="value" id="bt">--</div><div class="unit">nT</div>
 
 <div class="rating" id="btRating">Waiting for data</div>
 
-<p class="muted">Stronger fields can provide more coupling potential.</p>
+<p class="muted">Stronger magnetic fields can provide more coupling potential.</p>
+
+<div class="legend" id="btLegend"></div>
 
 </div>
 
@@ -122,11 +152,11 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>Solar Wind Speed</h2>
 
-<div class="value" id="speed">--</div>
-
-<div class="unit">km/s</div>
+<div class="value" id="speed">--</div><div class="unit">km/s</div>
 
 <div class="rating" id="speedRating">Waiting for data</div>
+
+<div class="legend" id="speedLegend"></div>
 
 </div>
 
@@ -134,11 +164,11 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>Proton Density</h2>
 
-<div class="value" id="density">--</div>
-
-<div class="unit">particles/cm³</div>
+<div class="value" id="density">--</div><div class="unit">particles/cm³</div>
 
 <div class="rating" id="densityRating">Waiting for data</div>
+
+<div class="legend" id="densityLegend"></div>
 
 </div>
 
@@ -146,11 +176,13 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>Planetary Kp</h2>
 
-<div class="value" id="kp">--</div>
-
-<div class="unit">Planetary geomagnetic index</div>
+<div class="value" id="kp">--</div><div class="unit">Planetary geomagnetic index</div>
 
 <div class="rating" id="kpRating">Waiting for data</div>
+
+<p class="muted">A global index, not a direct measure of Fairbanks visibility.</p>
+
+<div class="legend" id="kpLegend"></div>
 
 </div>
 
@@ -158,13 +190,13 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h2>OVATION · Near Fairbanks</h2>
 
-<div class="value" id="ovation">--</div>
-
-<div class="unit">Forecast probability (%)</div>
+<div class="value" id="ovation">--</div><div class="unit">Forecast probability (%)</div>
 
 <div class="rating" id="ovationRating">Waiting for data</div>
 
 <p class="muted" id="ovationTime">NOAA aurora forecast</p>
+
+<div class="legend" id="ovationLegend"></div>
 
 </div>
 
@@ -178,7 +210,7 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <div class="rating">Open Kyoto live data</div>
 
-<p class="muted"><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank">View real-time AE index ↗</a></p>
+<p class="muted"><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank" rel="noopener">View real-time AE index ↗</a></p>
 
 </div>
 
@@ -186,13 +218,77 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <section>
 
+<h3>📡 Data feed timestamps</h3>
+
+<p class="muted">Source time is when the provider says the reading or forecast was recorded. Fetch time is when this dashboard last successfully retrieved that feed. They are not necessarily the same.</p>
+
+<div class="feed-grid">
+
+<div class="feed">
+
+<h4>Magnetic Field · Bz / By / Bt</h4>
+
+<p>Source reading: <span id="magSource">Waiting</span></p>
+
+<p>Last fetched: <span id="magFetch">Not yet retrieved</span></p>
+
+<p class="feed-status" id="magState">Waiting for data</p>
+
+</div>
+
+<div class="feed">
+
+<h4>Solar Wind · Speed / Density</h4>
+
+<p>Source reading: <span id="windSource">Waiting</span></p>
+
+<p>Last fetched: <span id="windFetch">Not yet retrieved</span></p>
+
+<p class="feed-status" id="windState">Waiting for data</p>
+
+</div>
+
+<div class="feed">
+
+<h4>Planetary Kp</h4>
+
+<p>Source reading: <span id="kpSource">Waiting</span></p>
+
+<p>Last fetched: <span id="kpFetch">Not yet retrieved</span></p>
+
+<p class="feed-status" id="kpState">Waiting for data</p>
+
+</div>
+
+<div class="feed">
+
+<h4>OVATION Forecast</h4>
+
+<p>Forecast time: <span id="ovSource">Waiting</span></p>
+
+<p>Last fetched: <span id="ovFetch">Not yet retrieved</span></p>
+
+<p class="feed-status" id="ovState">Waiting for data</p>
+
+</div>
+
+</div>
+
+</section>
+
+<section>
+
 <h3>Understanding the readings</h3>
 
 <p><b>Bz:</b> Sustained negative values are generally favorable. Around -5 nT is useful; -10 nT or lower can be especially favorable.</p>
 
-<p><b>Solar wind speed:</b> Below 350 km/s is slow; 350–500 is moderate; 500–600 is fast; above 600 is very fast.</p>
+<p><b>By:</b> Helps describe magnetic-field orientation. Its effect depends on other solar-wind and magnetospheric conditions.</p>
 
-<p><b>Density:</b> Below 5 is low; 5–10 is moderate; 10–20 is elevated; above 20 particles/cm³ is high.</p>
+<p><b>Bt:</b> Total magnetic-field strength. Stronger fields can be more influential, especially when Bz is southward.</p>
+
+<p><b>Solar wind speed:</b> Faster solar wind can increase energy transfer into Earth's magnetosphere.</p>
+
+<p><b>Density:</b> Describes the number of solar-wind protons. Higher density can increase dynamic pressure, but is not automatically better.</p>
 
 <p><b>Kp:</b> A global three-hour index. It is not a direct measure of visibility in Fairbanks.</p>
 
@@ -204,11 +300,11 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h3>Data sources</h3>
 
-<p><a href="https://www.swpc.noaa.gov/" target="_blank">NOAA Space Weather Prediction Center</a></p>
+<p><a href="https://www.swpc.noaa.gov/" target="_blank" rel="noopener">NOAA Space Weather Prediction Center</a></p>
 
-<p><a href="https://omniweb.gsfc.nasa.gov/" target="_blank">NASA OMNIWeb</a></p>
+<p><a href="https://omniweb.gsfc.nasa.gov/" target="_blank" rel="noopener">NASA OMNIWeb</a></p>
 
-<p><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank">Kyoto World Data Center AE</a></p>
+<p><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank" rel="noopener">Kyoto World Data Center AE</a></p>
 
 </section>
 
@@ -216,9 +312,11 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <footer>
 
-<div id="updated">Last update: not yet available</div>
+<div id="updated">Dashboard started: waiting for first update</div>
 
 <p>Data are upstream and global indicators. Local cloud cover, darkness, weather and viewing conditions still matter. This dashboard is an observing aid, not a guarantee of aurora visibility.</p>
+
+<p>Dashboard refresh interval: 60 seconds. A refresh does not necessarily mean the provider has published a new measurement.</p>
 
 </footer>
 
@@ -226,223 +324,481 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 const urls={
 
-mag:"https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
+ mag:"https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
 
-wind:"https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
+ wind:"https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
 
-kp:"https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
+ kp:"https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
 
-ovation:"https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+ ovation:"https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 
 };
 
-function latest(rows){
+const $=id=>document.getElementById(id);
 
-if(!Array.isArray(rows)||!rows.length)return null;
+const alaskaTime=value=>{
 
-return rows[rows.length-1];
+ if(!value)return "Timestamp unavailable";
 
-}
+ const d=new Date(value);
 
-function number(v){
+ if(Number.isNaN(d.getTime()))return "Timestamp unavailable";
 
-const n=Number(v);
+ return d.toLocaleString("en-US",{
 
-return Number.isFinite(n)?n:null;
+  timeZone:"America/Anchorage",
 
-}
+  month:"short",day:"numeric",year:"numeric",
 
-function show(id,value,decimals=1){
+  hour:"numeric",minute:"2-digit",second:"2-digit",
 
-document.getElementById(id).textContent=value===null?"--":value.toFixed(decimals);
+  timeZoneName:"short"
 
-}
+ });
 
-function rating(id,text,kind=""){
+};
 
-const el=document.getElementById(id);
+const num=v=>{
 
-el.textContent=text;
+ if(v===null||v===undefined||v==="")return null;
 
-el.className="rating "+kind;
+ const n=Number(v);
 
-}
+ return Number.isFinite(n)?n:null;
 
-function setBz(v){
+};
 
-show("bz",v);
+const latest=rows=>{
 
-if(v===null){rating("bzRating","No data");return}
+ if(!Array.isArray(rows)||!rows.length)return null;
 
-if(v<=-10)rating("bzRating","Excellent southward","good");
+ return rows[rows.length-1];
 
-else if(v<=-5)rating("bzRating","Favorable southward","good");
+};
 
-else if(v<0)rating("bzRating","Slightly southward","warn");
+const sourceTime=r=>{
 
-else rating("bzRating","Northward / less favorable","bad");
+ if(!r)return null;
 
-}
+ return r.time_tag||r.time||r.datetime||r.timestamp||r.ObservationTime||r.observation_time||null;
 
-function setSpeed(v){
+};
 
-show("speed",v,0);
+const show=(id,v,d=1)=>{
 
-if(v===null){rating("speedRating","No data");return}
+ $(id).textContent=v===null?"--":v.toFixed(d);
 
-if(v>=600)rating("speedRating","Very fast","good");
+};
 
-else if(v>=500)rating("speedRating","Fast","good");
+const setRating=(id,label,kind="")=>{
 
-else if(v>=350)rating("speedRating","Moderate","warn");
+ $(id).textContent=label;
 
-else rating("speedRating","Slow","bad");
+ $(id).className="rating "+kind;
 
-}
+};
 
-function setDensity(v){
+function legend(id,levels,active){
 
-show("density",v);
+ $(id).innerHTML=levels.map((l,i)=>
 
-if(v===null){rating("densityRating","No data");return}
+  `<div class="level ${l.kind} ${i===active?"active":""}">${l.label}${i===active?" · NOW":""}</div>`
 
-if(v>=20)rating("densityRating","Very elevated","good");
-
-else if(v>=10)rating("densityRating","Elevated","good");
-
-else if(v>=5)rating("densityRating","Moderate","warn");
-
-else rating("densityRating","Low","bad");
+ ).join("");
 
 }
 
-function setKp(v){
+function rangeIndex(v,bounds){
 
-show("kp",v,1);
+ if(v===null)return -1;
 
-if(v===null){rating("kpRating","No data");return}
+ for(let i=0;i<bounds.length;i++){
 
-if(v>=7)rating("kpRating","Strong geomagnetic storm","good");
+  if(bounds[i](v))return i;
 
-else if(v>=5)rating("kpRating","Active","good");
+ }
 
-else if(v>=3)rating("kpRating","Unsettled","warn");
+ return bounds.length-1;
 
-else rating("kpRating","Quiet","bad");
+}
+
+function updateBz(v){
+
+ show("bz",v);
+
+ const levels=[
+
+  {label:"Northward",kind:"bad"},
+
+  {label:"Slight south",kind:"warn"},
+
+  {label:"Favorable",kind:"good"},
+
+  {label:"Strong south",kind:"good"}
+
+ ];
+
+ const i=rangeIndex(v,[x=>x>=0,x=>x>-5,x=>x>-10,x=>true]);
+
+ legend("bzLegend",levels,i);
+
+ if(v===null)setRating("bzRating","No data");
+
+ else if(v<=-10)setRating("bzRating","Excellent southward","good");
+
+ else if(v<=-5)setRating("bzRating","Favorable southward","good");
+
+ else if(v<0)setRating("bzRating","Slightly southward","warn");
+
+ else setRating("bzRating","Northward / less favorable","bad");
+
+}
+
+function updateBy(v){
+
+ show("by",v);
+
+ const levels=[
+
+  {label:"Negative",kind:"neutral"},
+
+  {label:"Near zero",kind:"neutral"},
+
+  {label:"Positive",kind:"neutral"}
+
+ ];
+
+ legend("byLegend",levels,rangeIndex(v,[x=>x< -2,x=>x<=2,x=>true]));
+
+ setRating("byRating",v===null?"No data":v< -2?"Negative By":v<=2?"Near zero By":"Positive By");
+
+}
+
+function updateBt(v){
+
+ show("bt",v);
+
+ const levels=[
+
+  {label:"Weak <5",kind:"neutral"},
+
+  {label:"Moderate 5-10",kind:"neutral"},
+
+  {label:"Strong 10-20",kind:"good"},
+
+  {label:"Very strong >20",kind:"good"}
+
+ ];
+
+ legend("btLegend",levels,rangeIndex(v,[x=>x<5,x=>x<10,x=>x<20,x=>true]));
+
+ setRating("btRating",v===null?"No data":v>=20?"Very strong field":v>=10?"Strong field":v>=5?"Moderate field":"Weak field");
+
+}
+
+function updateSpeed(v){
+
+ show("speed",v,0);
+
+ const levels=[
+
+  {label:"Slow <350",kind:"bad"},
+
+  {label:"Moderate 350-500",kind:"warn"},
+
+  {label:"Fast 500-600",kind:"good"},
+
+  {label:"Very fast ≥600",kind:"good"}
+
+ ];
+
+ legend("speedLegend",levels,rangeIndex(v,[x=>x<350,x=>x<500,x=>x<600,x=>true]));
+
+ if(v===null)setRating("speedRating","No data");
+
+ else if(v>=600)setRating("speedRating","Very fast","good");
+
+ else if(v>=500)setRating("speedRating","Fast","good");
+
+ else if(v>=350)setRating("speedRating","Moderate","warn");
+
+ else setRating("speedRating","Slow","bad");
+
+}
+
+function updateDensity(v){
+
+ show("density",v);
+
+ const levels=[
+
+  {label:"Low <5",kind:"bad"},
+
+  {label:"Moderate 5-10",kind:"warn"},
+
+  {label:"Elevated 10-20",kind:"good"},
+
+  {label:"High ≥20",kind:"good"}
+
+ ];
+
+ legend("densityLegend",levels,rangeIndex(v,[x=>x<5,x=>x<10,x=>x<20,x=>true]));
+
+ if(v===null)setRating("densityRating","No data");
+
+ else if(v>=20)setRating("densityRating","Very elevated","good");
+
+ else if(v>=10)setRating("densityRating","Elevated","good");
+
+ else if(v>=5)setRating("densityRating","Moderate","warn");
+
+ else setRating("densityRating","Low","bad");
+
+}
+
+function updateKp(v){
+
+ show("kp",v);
+
+ const levels=[
+
+  {label:"Quiet <3",kind:"bad"},
+
+  {label:"Unsettled 3-5",kind:"warn"},
+
+  {label:"Active 5-7",kind:"good"},
+
+  {label:"Storm ≥7",kind:"good"}
+
+ ];
+
+ legend("kpLegend",levels,rangeIndex(v,[x=>x<3,x=>x<5,x=>x<7,x=>true]));
+
+ if(v===null)setRating("kpRating","No data");
+
+ else if(v>=7)setRating("kpRating","Strong geomagnetic storm","good");
+
+ else if(v>=5)setRating("kpRating","Active","good");
+
+ else if(v>=3)setRating("kpRating","Unsettled","warn");
+
+ else setRating("kpRating","Quiet","bad");
+
+}
+
+function updateOvation(v){
+
+ show("ovation",v,0);
+
+ const levels=[
+
+  {label:"Low <20%",kind:"bad"},
+
+  {label:"Moderate 20-50%",kind:"warn"},
+
+  {label:"High ≥50%",kind:"good"}
+
+ ];
+
+ legend("ovationLegend",levels,rangeIndex(v,[x=>x<20,x=>x<50,x=>true]));
+
+ if(v===null)setRating("ovationRating","No data");
+
+ else if(v>=50)setRating("ovationRating","Higher forecast probability","good");
+
+ else if(v>=20)setRating("ovationRating","Moderate forecast probability","warn");
+
+ else setRating("ovationRating","Lower forecast probability","bad");
 
 }
 
 async function getJSON(url){
 
-const response=await fetch(url,{cache:"no-store"});
+ const response=await fetch(url,{cache:"no-store"});
 
-if(!response.ok)throw new Error("HTTP "+response.status);
+ if(!response.ok)throw new Error("HTTP "+response.status);
 
-return response.json();
+ return response.json();
+
+}
+
+function feedDisplay(prefix,source,fetched,staleMinutes){
+
+ $(prefix+"Source").textContent=source?alaskaTime(source):"Not supplied by source";
+
+ $(prefix+"Fetch").textContent=alaskaTime(fetched);
+
+ const state=$(prefix+"State");
+
+ if(!source){
+
+  state.textContent="Timestamp unavailable from provider";
+
+  state.className="feed-status unknown";
+
+  return;
+
+ }
+
+ const age=(Date.now()-new Date(source).getTime())/60000;
+
+ if(!Number.isFinite(age)){
+
+  state.textContent="Could not interpret source timestamp";
+
+  state.className="feed-status unknown";
+
+ }else if(age>staleMinutes){
+
+  state.textContent="⚠ Source reading may be stale ("+Math.round(age)+" min old)";
+
+  state.className="feed-status stale";
+
+ }else{
+
+  state.textContent="✓ Recent source reading ("+Math.max(0,Math.round(age))+" min old)";
+
+  state.className="feed-status fresh";
+
+ }
+
+}
+
+function feedError(prefix,message){
+
+ $(prefix+"State").textContent="⚠ Feed unavailable: "+message;
+
+ $(prefix+"State").className="feed-status stale";
 
 }
 
 async function update(){
 
-const errors=[];
+ const errors=[];
 
-try{
+ const fetchedAt=new Date().toISOString();
 
-const rows=await getJSON(urls.mag);
+ try{
 
-const r=latest(rows);
+  const rows=await getJSON(urls.mag);
 
-if(!r)throw new Error("No magnetic readings");
+  const r=latest(rows);
 
-const bz=number(r.bz_gsm);
+  if(!r)throw new Error("No magnetic readings");
 
-const by=number(r.by_gsm);
+  updateBz(num(r.bz_gsm));
 
-const bt=number(r.bt);
+  updateBy(num(r.by_gsm));
 
-setBz(bz);
+  updateBt(num(r.bt));
 
-show("by",by);
+  feedDisplay("mag",sourceTime(r),new Date().toISOString(),5);
 
-show("bt",bt);
+ }catch(e){
 
-rating("byRating",by===null?"No data":"Field orientation");
+  errors.push("Magnetic field");
 
-rating("btRating",bt===null?"No data":bt>=10?"Strong field":"Field strength");
+  feedError("mag",e.message);
 
-}catch(e){errors.push("Magnetic field")}
+ }
 
-try{
+ try{
 
-const rows=await getJSON(urls.wind);
+  const rows=await getJSON(urls.wind);
 
-const r=latest(rows);
+  const r=latest(rows);
 
-if(!r)throw new Error("No wind readings");
+  if(!r)throw new Error("No solar-wind readings");
 
-setSpeed(number(r.proton_speed));
+  updateSpeed(num(r.proton_speed));
 
-setDensity(number(r.proton_density));
+  updateDensity(num(r.proton_density));
 
-}catch(e){errors.push("Solar wind")}
+  feedDisplay("wind",sourceTime(r),new Date().toISOString(),5);
 
-try{
+ }catch(e){
 
-const rows=await getJSON(urls.kp);
+  errors.push("Solar wind");
 
-const r=latest(rows);
+  feedError("wind",e.message);
 
-if(!r)throw new Error("No Kp readings");
+ }
 
-setKp(number(r.kp_index??r.estimated_kp??r.kp));
+ try{
 
-}catch(e){errors.push("Kp")}
+  const rows=await getJSON(urls.kp);
 
-try{
+  const r=latest(rows);
 
-const data=await getJSON(urls.ovation);
+  if(!r)throw new Error("No Kp readings");
 
-const coords=data.coordinates||[];
+  updateKp(num(r.kp_index??r.estimated_kp??r.kp));
 
-const targetLon=212.28;
+  feedDisplay("kp",sourceTime(r),new Date().toISOString(),10);
 
-const targetLat=64.84;
+ }catch(e){
 
-let closest=null;
+  errors.push("Kp");
 
-let best=Infinity;
+  feedError("kp",e.message);
 
-for(const p of coords){
+ }
 
-if(!Array.isArray(p)||p.length<3)continue;
+ try{
 
-const d=(Number(p[0])-targetLon)**2+(Number(p[1])-targetLat)**2;
+  const data=await getJSON(urls.ovation);
 
-if(d<best){best=d;closest=p;}
+  const coords=data.coordinates||[];
 
-}
+  const targetLon=212.28;
 
-if(closest){
+  const targetLat=64.84;
 
-const probability=number(closest[2]);
+  let closest=null,best=Infinity;
 
-show("ovation",probability,0);
+  for(const p of coords){
 
-rating("ovationRating",probability>=50?"Higher forecast probability":probability>=20?"Moderate forecast probability":"Lower forecast probability",probability>=50?"good":probability>=20?"warn":"");
+   if(!Array.isArray(p)||p.length<3)continue;
 
-}else throw new Error("No nearby forecast point");
+   const lon=num(p[0]),lat=num(p[1]),prob=num(p[2]);
 
-document.getElementById("ovationTime").textContent="Nearest forecast grid point, not a direct local observation.";
+   if(lon===null||lat===null||prob===null)continue;
 
-}catch(e){errors.push("OVATION")}
+   const d=(lon-targetLon)**2+(lat-targetLat)**2;
 
-document.getElementById("status").textContent=errors.length?
+   if(d<best){best=d;closest=p;}
 
-"Some feeds could not be loaded: "+errors.join(", ")+". Other readings may still be available.":
+  }
 
-"Live data feeds checked. Values may have different update times.";
+  if(!closest)throw new Error("No nearby forecast point");
 
-document.getElementById("updated").textContent="Last checked: "+new Date().toLocaleString();
+  updateOvation(num(closest[2]));
+
+  const forecastTime=data.ForecastTime||data.forecast_time||data.ObservationTime||null;
+
+  $("ovationTime").textContent=forecastTime?
+
+   "Forecast time: "+alaskaTime(forecastTime):
+
+   "Nearest forecast grid point. Forecast timestamp not supplied.";
+
+  feedDisplay("ov",forecastTime,new Date().toISOString(),120);
+
+ }catch(e){
+
+  errors.push("OVATION");
+
+  feedError("ov",e.message);
+
+ }
+
+ $("status").textContent=errors.length?
+
+  "Some feeds could not be loaded: "+errors.join(", ")+". Other readings may still be available.":
+
+  "All dashboard feeds retrieved. Check each feed timestamp below for source freshness.";
+
+ $("updated").textContent="Dashboard refresh completed: "+alaskaTime(new Date().toISOString());
 
 }
 
