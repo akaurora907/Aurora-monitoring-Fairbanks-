@@ -80,6 +80,8 @@ main{max-width:1100px;margin:auto;padding:16px}
 
 .unknown{color:#ffe5a0}
 
+.data-link{margin-top:9px!important}
+
 section{margin-top:22px}
 
 h3{color:#75dcff}
@@ -214,7 +216,7 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <p class="muted">AE measures auroral electrojet activity. A more negative AL can indicate strengthening westward electrojet activity and substorm development.</p>
 
-<p><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank" rel="noopener">Open Kyoto real-time AE data ↗</a></p>
+<p><a href="https://wdc.kugi.u.ac.jp/ae_realtime/" target="_blank" rel="noopener">Open Kyoto real-time AE data ↗</a></p>
 
 <p class="muted">Numerical AE readings are not currently integrated into this dashboard.</p>
 
@@ -226,7 +228,7 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <h3>📡 Data feed timestamps</h3>
 
-<p class="muted">Tap either timestamp to open its original data source. Source time is when the provider says the reading or forecast was recorded. Fetch time is when this dashboard last retrieved the feed.</p>
+<p class="muted">Source time is when the provider says the reading or forecast was recorded. Fetch time is when this dashboard last retrieved the feed. Use the NOAA data links to inspect the original data.</p>
 
 <div class="feed-grid">
 
@@ -237,6 +239,8 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 <p>Source reading: <span id="magSource">Waiting</span></p>
 
 <p>Last fetched: <span id="magFetch">Not yet retrieved</span></p>
+
+<p class="data-link"><a href="https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json" target="_blank" rel="noopener">View NOAA data (JSON) ↗</a></p>
 
 <p class="feed-status" id="magState">Waiting for data</p>
 
@@ -250,6 +254,8 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <p>Last fetched: <span id="windFetch">Not yet retrieved</span></p>
 
+<p class="data-link"><a href="https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json" target="_blank" rel="noopener">View NOAA data (JSON) ↗</a></p>
+
 <p class="feed-status" id="windState">Waiting for data</p>
 
 </div>
@@ -262,6 +268,8 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <p>Last fetched: <span id="kpFetch">Not yet retrieved</span></p>
 
+<p class="data-link"><a href="https://services.swpc.noaa.gov/json/planetary_k_index_1m.json" target="_blank" rel="noopener">View NOAA data (JSON) ↗</a></p>
+
 <p class="feed-status" id="kpState">Waiting for data</p>
 
 </div>
@@ -273,6 +281,8 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 <p>Forecast time: <span id="ovSource">Waiting</span></p>
 
 <p>Last fetched: <span id="ovFetch">Not yet retrieved</span></p>
+
+<p class="data-link"><a href="https://services.swpc.noaa.gov/json/ovation_aurora_latest.json" target="_blank" rel="noopener">View NOAA data (JSON) ↗</a></p>
 
 <p class="feed-status" id="ovState">Waiting for data</p>
 
@@ -312,7 +322,7 @@ footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
 
 <p><a href="https://omniweb.gsfc.nasa.gov/" target="_blank" rel="noopener">NASA OMNIWeb</a></p>
 
-<p><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank" rel="noopener">Kyoto World Data Center AE</a></p>
+<p><a href="https://wdc.kugi.u.ac.jp/ae_realtime/" target="_blank" rel="noopener">Kyoto World Data Center AE</a></p>
 
 </section>
 
@@ -632,29 +642,11 @@ return response.json();
 
 }
 
-function linkedTimestamp(id,value,url){
+function feedDisplay(prefix,source,fetched,staleMinutes){
 
-const a=document.createElement("a");
+$(prefix+"Source").textContent=source?alaskaTime(source):"Timestamp unavailable";
 
-a.href=url;
-
-a.target="_blank";
-
-a.rel="noopener";
-
-a.textContent=value;
-
-$(id).replaceChildren(a);
-
-}
-
-function feedDisplay(prefix,source,fetched,staleMinutes,url){
-
-linkedTimestamp(prefix+"Source",
-
-source?alaskaTime(source):"Timestamp unavailable",url);
-
-linkedTimestamp(prefix+"Fetch",alaskaTime(fetched),url);
+$(prefix+"Fetch").textContent=alaskaTime(fetched);
 
 const state=$(prefix+"State");
 
@@ -718,7 +710,7 @@ updateBy(num(r.by_gsm));
 
 updateBt(num(r.bt));
 
-feedDisplay("mag",sourceTime(r),new Date().toISOString(),5,urls.mag);
+feedDisplay("mag",sourceTime(r),new Date().toISOString(),5);
 
 }catch(e){
 
@@ -740,7 +732,7 @@ updateSpeed(num(r.proton_speed));
 
 updateDensity(num(r.proton_density));
 
-feedDisplay("wind",sourceTime(r),new Date().toISOString(),5,urls.wind);
+feedDisplay("wind",sourceTime(r),new Date().toISOString(),5);
 
 }catch(e){
 
@@ -760,7 +752,7 @@ if(!r)throw new Error("No Kp readings");
 
 updateKp(num(r.kp_index??r.estimated_kp??r.kp));
 
-feedDisplay("kp",sourceTime(r),new Date().toISOString(),10,urls.kp);
+feedDisplay("kp",sourceTime(r),new Date().toISOString(),10);
 
 }catch(e){
 
@@ -810,7 +802,7 @@ $("ovationTime").textContent=forecastTime?
 
 "Nearest forecast grid point. Forecast timestamp not supplied.";
 
-feedDisplay("ov",forecastTime,new Date().toISOString(),120,urls.ovation);
+feedDisplay("ov",forecastTime,new Date().toISOString(),120);
 
 }catch(e){
 
