@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Fairbanks Aurora Monitor</title>
+
+<style>
+
+:root{color-scheme:dark}
+
+*{box-sizing:border-box}
+
+body{margin:0;background:#07111f;color:#edf5ff;font-family:Arial,sans-serif}
+
+header{padding:24px 16px;text-align:center;background:#10243b;border-bottom:1px solid #28435e}
+
+h1{margin:0;color:#75dcff;font-size:27px}
+
+header p{margin:8px 0 0;color:#b9c9d9}
+
+main{max-width:1050px;margin:auto;padding:16px}
+
+.status{padding:12px;background:#132b40;border-radius:10px;margin-bottom:16px;color:#b9d8e8}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+
+.card{background:#122338;border:1px solid #29445e;border-radius:12px;padding:16px;min-height:135px}
+
+.card h2{font-size:15px;color:#a9c6dc;margin:0 0 12px}
+
+.value{font-size:32px;font-weight:bold;color:#fff}
+
+.unit{font-size:14px;color:#a9c6dc}
+
+.rating{display:inline-block;margin-top:10px;padding:5px 9px;border-radius:6px;background:#34465a;font-size:12px}
+
+.good{background:#155a45;color:#aaffd7}
+
+.warn{background:#70531a;color:#ffe5a0}
+
+.bad{background:#71313b;color:#ffd0d0}
+
+.muted{color:#a9c0d2;font-size:13px}
+
+section{margin-top:20px}
+
+h3{color:#75dcff}
+
+a{color:#75dcff}
+
+footer{padding:22px 16px;color:#a9c0d2;font-size:12px;line-height:1.6}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h1>🌌 Fairbanks Aurora Monitor</h1>
+
+<p>Live space-weather conditions for aurora watching</p>
+
+</header>
+
+<main>
+
+<div class="status" id="status">Connecting to NOAA space-weather data...</div>
+
+<div class="grid">
+
+<div class="card">
+
+<h2>IMF Bz · GSM</h2>
+
+<div class="value" id="bz">--</div>
+
+<div class="unit">nT</div>
+
+<div class="rating" id="bzRating">Waiting for data</div>
+
+<p class="muted">Southward (negative) Bz is generally favorable.</p>
+
+</div>
+
+<div class="card">
+
+<h2>IMF By · GSM</h2>
+
+<div class="value" id="by">--</div>
+
+<div class="unit">nT</div>
+
+<div class="rating" id="byRating">Waiting for data</div>
+
+<p class="muted">Helps describe the orientation of the magnetic field.</p>
+
+</div>
+
+<div class="card">
+
+<h2>Total Magnetic Field · Bt</h2>
+
+<div class="value" id="bt">--</div>
+
+<div class="unit">nT</div>
+
+<div class="rating" id="btRating">Waiting for data</div>
+
+<p class="muted">Stronger fields can provide more coupling potential.</p>
+
+</div>
+
+<div class="card">
+
+<h2>Solar Wind Speed</h2>
+
+<div class="value" id="speed">--</div>
+
+<div class="unit">km/s</div>
+
+<div class="rating" id="speedRating">Waiting for data</div>
+
+</div>
+
+<div class="card">
+
+<h2>Proton Density</h2>
+
+<div class="value" id="density">--</div>
+
+<div class="unit">particles/cm³</div>
+
+<div class="rating" id="densityRating">Waiting for data</div>
+
+</div>
+
+<div class="card">
+
+<h2>Planetary Kp</h2>
+
+<div class="value" id="kp">--</div>
+
+<div class="unit">Planetary geomagnetic index</div>
+
+<div class="rating" id="kpRating">Waiting for data</div>
+
+</div>
+
+<div class="card">
+
+<h2>OVATION · Near Fairbanks</h2>
+
+<div class="value" id="ovation">--</div>
+
+<div class="unit">Forecast probability (%)</div>
+
+<div class="rating" id="ovationRating">Waiting for data</div>
+
+<p class="muted" id="ovationTime">NOAA aurora forecast</p>
+
+</div>
+
+<div class="card">
+
+<h2>AE · Auroral Electrojet</h2>
+
+<div class="value">External feed</div>
+
+<div class="unit">AE, AU and AL indices</div>
+
+<div class="rating">Open Kyoto live data</div>
+
+<p class="muted"><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank">View real-time AE index ↗</a></p>
+
+</div>
+
+</div>
+
+<section>
+
+<h3>Understanding the readings</h3>
+
+<p><b>Bz:</b> Sustained negative values are generally favorable. Around -5 nT is useful; -10 nT or lower can be especially favorable.</p>
+
+<p><b>Solar wind speed:</b> Below 350 km/s is slow; 350–500 is moderate; 500–600 is fast; above 600 is very fast.</p>
+
+<p><b>Density:</b> Below 5 is low; 5–10 is moderate; 10–20 is elevated; above 20 particles/cm³ is high.</p>
+
+<p><b>Kp:</b> A global three-hour index. It is not a direct measure of visibility in Fairbanks.</p>
+
+<p><b>OVATION:</b> A model forecast, not a guarantee of visible aurora at your location.</p>
+
+</section>
+
+<section>
+
+<h3>Data sources</h3>
+
+<p><a href="https://www.swpc.noaa.gov/" target="_blank">NOAA Space Weather Prediction Center</a></p>
+
+<p><a href="https://omniweb.gsfc.nasa.gov/" target="_blank">NASA OMNIWeb</a></p>
+
+<p><a href="https://wdc.kugi.kyoto-u.ac.jp/ae_realtime/" target="_blank">Kyoto World Data Center AE</a></p>
+
+</section>
+
+</main>
+
+<footer>
+
+<div id="updated">Last update: not yet available</div>
+
+<p>Data are upstream and global indicators. Local cloud cover, darkness, weather and viewing conditions still matter. This dashboard is an observing aid, not a guarantee of aurora visibility.</p>
+
+</footer>
+
+<script>
+
+const urls={
+
+mag:"https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json",
+
+wind:"https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json",
+
+kp:"https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
+
+ovation:"https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+
+};
+
+function latest(rows){
+
+if(!Array.isArray(rows)||!rows.length)return null;
+
+return rows[rows.length-1];
+
+}
+
+function number(v){
+
+const n=Number(v);
+
+return Number.isFinite(n)?n:null;
+
+}
+
+function show(id,value,decimals=1){
+
+document.getElementById(id).textContent=value===null?"--":value.toFixed(decimals);
+
+}
+
+function rating(id,text,kind=""){
+
+const el=document.getElementById(id);
+
+el.textContent=text;
+
+el.className="rating "+kind;
+
+}
+
+function setBz(v){
+
+show("bz",v);
+
+if(v===null){rating("bzRating","No data");return}
+
+if(v<=-10)rating("bzRating","Excellent southward","good");
+
+else if(v<=-5)rating("bzRating","Favorable southward","good");
+
+else if(v<0)rating("bzRating","Slightly southward","warn");
+
+else rating("bzRating","Northward / less favorable","bad");
+
+}
+
+function setSpeed(v){
+
+show("speed",v,0);
+
+if(v===null){rating("speedRating","No data");return}
+
+if(v>=600)rating("speedRating","Very fast","good");
+
+else if(v>=500)rating("speedRating","Fast","good");
+
+else if(v>=350)rating("speedRating","Moderate","warn");
+
+else rating("speedRating","Slow","bad");
+
+}
+
+function setDensity(v){
+
+show("density",v);
+
+if(v===null){rating("densityRating","No data");return}
+
+if(v>=20)rating("densityRating","Very elevated","good");
+
+else if(v>=10)rating("densityRating","Elevated","good");
+
+else if(v>=5)rating("densityRating","Moderate","warn");
+
+else rating("densityRating","Low","bad");
+
+}
+
+function setKp(v){
+
+show("kp",v,1);
+
+if(v===null){rating("kpRating","No data");return}
+
+if(v>=7)rating("kpRating","Strong geomagnetic storm","good");
+
+else if(v>=5)rating("kpRating","Active","good");
+
+else if(v>=3)rating("kpRating","Unsettled","warn");
+
+else rating("kpRating","Quiet","bad");
+
+}
+
+async function getJSON(url){
+
+const response=await fetch(url,{cache:"no-store"});
+
+if(!response.ok)throw new Error("HTTP "+response.status);
+
+return response.json();
+
+}
+
+async function update(){
+
+const errors=[];
+
+try{
+
+const rows=await getJSON(urls.mag);
+
+const r=latest(rows);
+
+if(!r)throw new Error("No magnetic readings");
+
+const bz=number(r.bz_gsm);
+
+const by=number(r.by_gsm);
+
+const bt=number(r.bt);
+
+setBz(bz);
+
+show("by",by);
+
+show("bt",bt);
+
+rating("byRating",by===null?"No data":"Field orientation");
+
+rating("btRating",bt===null?"No data":bt>=10?"Strong field":"Field strength");
+
+}catch(e){errors.push("Magnetic field")}
+
+try{
+
+const rows=await getJSON(urls.wind);
+
+const r=latest(rows);
+
+if(!r)throw new Error("No wind readings");
+
+setSpeed(number(r.proton_speed));
+
+setDensity(number(r.proton_density));
+
+}catch(e){errors.push("Solar wind")}
+
+try{
+
+const rows=await getJSON(urls.kp);
+
+const r=latest(rows);
+
+if(!r)throw new Error("No Kp readings");
+
+setKp(number(r.kp_index??r.estimated_kp??r.kp));
+
+}catch(e){errors.push("Kp")}
+
+try{
+
+const data=await getJSON(urls.ovation);
+
+const coords=data.coordinates||[];
+
+const targetLon=212.28;
+
+const targetLat=64.84;
+
+let closest=null;
+
+let best=Infinity;
+
+for(const p of coords){
+
+if(!Array.isArray(p)||p.length<3)continue;
+
+const d=(Number(p[0])-targetLon)**2+(Number(p[1])-targetLat)**2;
+
+if(d<best){best=d;closest=p;}
+
+}
+
+if(closest){
+
+const probability=number(closest[2]);
+
+show("ovation",probability,0);
+
+rating("ovationRating",probability>=50?"Higher forecast probability":probability>=20?"Moderate forecast probability":"Lower forecast probability",probability>=50?"good":probability>=20?"warn":"");
+
+}else throw new Error("No nearby forecast point");
+
+document.getElementById("ovationTime").textContent="Nearest forecast grid point, not a direct local observation.";
+
+}catch(e){errors.push("OVATION")}
+
+document.getElementById("status").textContent=errors.length?
+
+"Some feeds could not be loaded: "+errors.join(", ")+". Other readings may still be available.":
+
+"Live data feeds checked. Values may have different update times.";
+
+document.getElementById("updated").textContent="Last checked: "+new Date().toLocaleString();
+
+}
+
+update();
+
+setInterval(update,60000);
+
+</script>
+
+</body>
+
+</html>
