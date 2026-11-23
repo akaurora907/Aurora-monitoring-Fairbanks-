@@ -386,24 +386,71 @@ return Number.isFinite(n)?n:null;
 
 };
 
-const latest=rows=>{
+const parseSourceDate=value=>{
 
-if(!Array.isArray(rows)||!rows.length)return null;
+  if(value===null||value===undefined||value==="")return null;
 
-return rows[rows.length-1];
+  let s=String(value).trim();
+
+  if(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)){
+
+    s=s.replace(" ","T")+"Z";
+
+  }else if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(s)){
+
+    s+="Z";
+
+  }
+
+  const d=new Date(s);
+
+  return Number.isNaN(d.getTime())?null:d;
 
 };
 
 const sourceTime=r=>{
 
-if(!r)return null;
+  if(!r)return null;
 
-return r.time_tag||r.time||r.datetime||r.timestamp||
+  return r.time_tag||r.time||r.datetime||r.timestamp||
 
-r.ObservationTime||r.observation_time||null;
+    r["Observation Time"]||r.ObservationTime||
+
+    r.observation_time||null;
 
 };
 
+const latest=(rows,isValid=()=>true,preferActive=false)=>{
+
+  if(!Array.isArray(rows)||!rows.length)return null;
+
+  const valid=rows.filter(r=>
+
+    r&&parseSourceDate(sourceTime(r))&&isValid(r)
+
+  );
+
+  if(!valid.length)return null;
+
+  const active=preferActive?
+
+    valid.filter(r=>r.active===true):[];
+
+  const pool=active.length?active:valid;
+
+  return pool.reduce((best,r)=>
+
+    !best||
+
+    parseSourceDate(sourceTime(r)).getTime()>
+
+    parseSourceDate(sourceTime(best)).getTime()
+
+      ?r:best,null
+
+  );
+
+};
 const show=(id,v,d=1)=>{
 
 $(id).textContent=v===null?"--":v.toFixed(d);
@@ -642,48 +689,79 @@ return response.json();
 
 }
 
-function feedDisplay(prefix,source,fetched,staleMinutes){
+function feedDisplay(
 
-$(prefix+"Source").textContent=source?alaskaTime(source):"Timestamp unavailable";
+  prefix,
 
-$(prefix+"Fetch").textContent=alaskaTime(fetched);
+  source,
 
-const state=$(prefix+"State");
+  fetched,
 
-if(!source){
+  staleMinutes,
 
-state.textContent="Timestamp unavailable from provider";
+  sourceLabel="",
 
-state.className="feed-status unknown";
+  freshnessSource=source
 
-return;
+){
+
+  const displayDate=parseSourceDate(source);
+
+  const measuredDate=parseSourceDate(freshnessSource);
+
+  $(prefix+"Source").textContent=
+
+    displayDate?alaskaTime(displayDate.toISOString()):
+
+    "Timestamp unavailable";
+
+  $(prefix+"Fetch").textContent=alaskaTime(fetched);
+
+  const state=$(prefix+"State");
+
+  const label=sourceLabel?" · "+sourceLabel:"";
+
+  if(!measuredDate){
+
+    state.textContent="Source freshness cannot be verified"+label;
+
+    state.className="feed-status unknown";
+
+    return;
+
+  }
+
+  const age=(Date.now()-measuredDate.getTime())/60000;
+
+  if(age < -5){
+
+    state.textContent="⚠ Provider timestamp is in the future"+label;
+
+    state.className="feed-status unknown";
+
+  }else if(age>staleMinutes){
+
+    state.textContent=
+
+      "⚠ Source reading may be stale ("+
+
+      Math.round(age)+" min old)"+label;
+
+    state.className="feed-status stale";
+
+  }else{
+
+    state.textContent=
+
+      "✓ Recent source reading ("+
+
+      Math.max(0,Math.round(age))+" min old)"+label;
+
+    state.className="feed-status fresh";
+
+  }
 
 }
-
-const age=(Date.now()-new Date(source).getTime())/60000;
-
-if(!Number.isFinite(age)){
-
-state.textContent="Could not interpret source timestamp";
-
-state.className="feed-status unknown";
-
-}else if(age>staleMinutes){
-
-state.textContent="⚠ Source reading may be stale ("+Math.round(age)+" min old)";
-
-state.className="feed-status stale";
-
-}else{
-
-state.textContent="✓ Recent source reading ("+Math.max(0,Math.round(age))+" min old)";
-
-state.className="feed-status fresh";
-
-}
-
-}
-
 function feedError(prefix,message){
 
 $(prefix+"State").textContent="⚠ Feed unavailable: "+message;
@@ -694,134 +772,231 @@ $(prefix+"State").className="feed-status stale";
 
 async function update(){
 
-const errors=[];
+  const errors=[];
 
-try{
+  try{
 
-const rows=await getJSON(urls.mag);
+    const rows=await getJSON(urls.mag);
 
-const r=latest(rows);
+    const fetchedAt=new Date().toISOString();
 
-if(!r)throw new Error("No magnetic readings");
+    const r=latest(rows,row=>
 
-updateBz(num(r.bz_gsm));
+      num(row.bz_gsm)!==null&&
 
-updateBy(num(r.by_gsm));
+      num(row.by_gsm)!==null&&
 
-updateBt(num(r.bt));
+      num(row.bt)!==null
 
-feedDisplay("mag",sourceTime(r),new Date().toISOString(),5);
+    ,true);
 
-}catch(e){
+    if(!r)throw new Error("No valid magnetic readings");
 
-errors.push("Magnetic field");
+    updateBz(num(r.bz_gsm));
 
-feedError("mag",e.message);
+    updateBy(num(r.by_gsm));
+
+    updateBt(num(r.bt));
+
+    const sourceLabel=
+
+      (r.source||"Unknown spacecraft")+
+
+      (r.active===true?" · active primary":" · fallback source");
+
+    feedDisplay(
+
+      "mag",sourceTime(r),fetchedAt,5,sourceLabel
+
+    );
+
+  }catch(e){
+
+    errors.push("Magnetic field");
+
+    feedError("mag",e.message);
+
+  }
+
+  try{
+
+    const rows=await getJSON(urls.wind);
+
+    const fetchedAt=new Date().toISOString();
+
+    const r=latest(rows,row=>
+
+      num(row.proton_speed)!==null&&
+
+      num(row.proton_density)!==null
+
+    ,true);
+
+    if(!r)throw new Error("No valid solar-wind readings");
+
+    updateSpeed(num(r.proton_speed));
+
+    updateDensity(num(r.proton_density));
+
+    const sourceLabel=
+
+      (r.source||"Unknown spacecraft")+
+
+      (r.active===true?" · active primary":" · fallback source");
+
+    feedDisplay(
+
+      "wind",sourceTime(r),fetchedAt,5,sourceLabel
+
+    );
+
+  }catch(e){
+
+    errors.push("Solar wind");
+
+    feedError("wind",e.message);
+
+  }
+
+  try{
+
+    const rows=await getJSON(urls.kp);
+
+    const fetchedAt=new Date().toISOString();
+
+    const r=latest(rows,row=>
+
+      num(row.kp_index??row.estimated_kp??row.kp)!==null
+
+    );
+
+    if(!r)throw new Error("No valid Kp readings");
+
+    updateKp(num(r.kp_index??r.estimated_kp??r.kp));
+
+    feedDisplay(
+
+      "kp",sourceTime(r),fetchedAt,10
+
+    );
+
+  }catch(e){
+
+    errors.push("Kp");
+
+    feedError("kp",e.message);
+
+  }
+
+  try{
+
+    const data=await getJSON(urls.ovation);
+
+    const fetchedAt=new Date().toISOString();
+
+    const coords=data.coordinates||[];
+
+    const targetLon=212.28;
+
+    const targetLat=64.84;
+
+    let closest=null,best=Infinity;
+
+    for(const p of coords){
+
+      if(!Array.isArray(p)||p.length<3)continue;
+
+      const lon=num(p[0]);
+
+      const lat=num(p[1]);
+
+      const prob=num(p[2]);
+
+      if(lon===null||lat===null||prob===null)continue;
+
+      const d=(lon-targetLon)**2+(lat-targetLat)**2;
+
+      if(d<best){
+
+        best=d;
+
+        closest=p;
+
+      }
+
+    }
+
+    if(!closest)throw new Error("No nearby forecast point");
+
+    updateOvation(num(closest[2]));
+
+    const forecastTime=
+
+      data["Forecast Time"]||
+
+      data.ForecastTime||
+
+      data.forecast_time||
+
+      null;
+
+    const observationTime=
+
+      data["Observation Time"]||
+
+      data.ObservationTime||
+
+      data.observation_time||
+
+      null;
+
+    $("ovationTime").textContent=forecastTime?
+
+      "Forecast time: "+alaskaTime(forecastTime):
+
+      "Forecast timestamp unavailable";
+
+    feedDisplay(
+
+      "ov",
+
+      forecastTime,
+
+      fetchedAt,
+
+      120,
+
+      "Freshness based on observation time",
+
+      observationTime
+
+    );
+
+  }catch(e){
+
+    errors.push("OVATION");
+
+    feedError("ov",e.message);
+
+  }
+
+  $("status").textContent=errors.length?
+
+    "Some feeds could not be loaded: "+
+
+    errors.join(", ")+
+
+    ". Other readings may still be available.":
+
+    "All dashboard feeds retrieved. Check each feed timestamp below for source freshness.";
+
+  $("updated").textContent=
+
+    "Dashboard refresh completed: "+
+
+    alaskaTime(new Date().toISOString());
 
 }
-
-try{
-
-const rows=await getJSON(urls.wind);
-
-const r=latest(rows);
-
-if(!r)throw new Error("No solar-wind readings");
-
-updateSpeed(num(r.proton_speed));
-
-updateDensity(num(r.proton_density));
-
-feedDisplay("wind",sourceTime(r),new Date().toISOString(),5);
-
-}catch(e){
-
-errors.push("Solar wind");
-
-feedError("wind",e.message);
-
-}
-
-try{
-
-const rows=await getJSON(urls.kp);
-
-const r=latest(rows);
-
-if(!r)throw new Error("No Kp readings");
-
-updateKp(num(r.kp_index??r.estimated_kp??r.kp));
-
-feedDisplay("kp",sourceTime(r),new Date().toISOString(),10);
-
-}catch(e){
-
-errors.push("Kp");
-
-feedError("kp",e.message);
-
-}
-
-try{
-
-const data=await getJSON(urls.ovation);
-
-const coords=data.coordinates||[];
-
-const targetLon=212.28;
-
-const targetLat=64.84;
-
-let closest=null,best=Infinity;
-
-for(const p of coords){
-
-if(!Array.isArray(p)||p.length<3)continue;
-
-const lon=num(p[0]),lat=num(p[1]),prob=num(p[2]);
-
-if(lon===null||lat===null||prob===null)continue;
-
-const d=(lon-targetLon)**2+(lat-targetLat)**2;
-
-if(d<best){best=d;closest=p;}
-
-}
-
-if(!closest)throw new Error("No nearby forecast point");
-
-updateOvation(num(closest[2]));
-
-const forecastTime=data.ForecastTime||data.forecast_time||
-
-data.ObservationTime||null;
-
-$("ovationTime").textContent=forecastTime?
-
-"Forecast time: "+alaskaTime(forecastTime):
-
-"Nearest forecast grid point. Forecast timestamp not supplied.";
-
-feedDisplay("ov",forecastTime,new Date().toISOString(),120);
-
-}catch(e){
-
-errors.push("OVATION");
-
-feedError("ov",e.message);
-
-}
-
-$("status").textContent=errors.length?
-
-"Some feeds could not be loaded: "+errors.join(", ")+". Other readings may still be available.":
-
-"All dashboard feeds retrieved. Check each feed timestamp below for source freshness.";
-
-$("updated").textContent="Dashboard refresh completed: "+alaskaTime(new Date().toISOString());
-
-}
-
 update();
 
 setInterval(update,60000);
