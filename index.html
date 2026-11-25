@@ -1295,13 +1295,41 @@ async function update(){
 
     const base="https://aa.usno.navy.mil/api";
 
+        const getLunarJSON=async url=>{
+
+      const controller=new AbortController();
+
+      const timeout=setTimeout(()=>controller.abort(),15000);
+
+      try{
+
+        const response=await fetch(url,{
+
+          cache:"no-store",
+
+          signal:controller.signal
+
+        });
+
+        if(!response.ok)throw new Error("HTTP "+response.status);
+
+        return await response.json();
+
+      }finally{
+
+        clearTimeout(timeout);
+
+      }
+
+    };
+
     const [dayData,phaseData]=await Promise.all([
 
-      getJSON(base+"/rstt/oneday?date="+date+
+      getLunarJSON(base+"/rstt/oneday?date="+date+
 
         "&coords=64.84%2C-147.72&tz="+tz),
 
-      getJSON(base+"/moon/phases/date?date="+date+"&nump=4")
+      getLunarJSON(base+"/moon/phases/date?date="+date+"&nump=4")
 
     ]);
 
@@ -1387,13 +1415,27 @@ async function update(){
 
     $("moonUpdated").textContent=
 
-      "Lunar data updated: "+alaskaTime(new Date().toISOString());
-
-  }catch(e){
+      "Lunar data updated: "+alaskaTime(new Date(). }catch(e){
 
     $("moonPhase").textContent="Lunar data unavailable";
 
-    $("moonUpdated").textContent="Could not retrieve lunar data";
+    $("moonIllum").textContent="Unavailable";
+
+    $("moonRise").textContent="Unavailable";
+
+    $("moonSet").textContent="Unavailable";
+
+    $("moonNextFull").textContent="Unavailable";
+
+    $("moonNextNew").textContent="Unavailable";
+
+    const reason=e.name==="AbortError"
+
+      ? "USNO request timed out after 15 seconds."
+
+      : "USNO request failed: "+e.message;
+
+    $("moonUpdated").textContent=reason;
 
   }
 
