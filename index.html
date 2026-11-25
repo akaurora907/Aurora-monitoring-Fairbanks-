@@ -1295,7 +1295,7 @@ async function update(){
 
     const base="https://aa.usno.navy.mil/api";
 
-        const getLunarJSON=async url=>{
+        const getLunarJSON=async (url,label)=>{
 
       const controller=new AbortController();
 
@@ -1311,9 +1311,23 @@ async function update(){
 
         });
 
-        if(!response.ok)throw new Error("HTTP "+response.status);
+        if(!response.ok){
+
+          throw new Error(label+" returned HTTP "+response.status);
+
+        }
 
         return await response.json();
+
+      }catch(e){
+
+        if(e.name==="AbortError"){
+
+          throw new Error(label+" timed out after 15 seconds");
+
+        }
+
+        throw new Error(label+": "+e.message);
 
       }finally{
 
@@ -1323,15 +1337,41 @@ async function update(){
 
     };
 
-    const [dayData,phaseData]=await Promise.all([
+    let dayData,phaseData;
 
-      getLunarJSON(base+"/rstt/oneday?date="+date+
+    try{
 
-        "&coords=64.84%2C-147.72&tz="+tz),
+      dayData=await getLunarJSON(
 
-      getLunarJSON(base+"/moon/phases/date?date="+date+"&nump=4")
+        base+"/rstt/oneday?date="+date+
 
-    ]);
+        "&coords=64.84%2C-147.72&tz="+tz,
+
+        "Moonrise and moonset request"
+
+      );
+
+    }catch(e){
+
+      throw e;
+
+    }
+
+    try{
+
+      phaseData=await getLunarJSON(
+
+        base+"/moon/phases/date?date="+date+"&nump=4",
+
+        "Upcoming moon phases request"
+
+      );
+
+    }catch(e){
+
+      throw e;
+
+    }
 
     const moon=dayData.properties.data;
 
