@@ -1413,9 +1413,11 @@ async function update(){
 
     $("moonNextNew").textContent=phaseDisplay(nextNew);
 
-    $("moonUpdated").textContent=
+    $("moonUpdated").textContent =
 
-      "Lunar data updated: "+alaskaTime(new Date(). }catch(e){
+      "Lunar data updated: " + alaskaTime(new Date().toISOString());
+
+  }catch(e){
 
     $("moonPhase").textContent="Lunar data unavailable";
 
