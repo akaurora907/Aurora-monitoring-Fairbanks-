@@ -1257,7 +1257,7 @@ async function update(){
 
   try{
 
-    const now=new Date();
+    const base="https://api.sunrisesunset.io/json";
 
     const parts=new Intl.DateTimeFormat("en-US",{
 
@@ -1269,193 +1269,157 @@ async function update(){
 
       day:"2-digit"
 
-    }).formatToParts(now);
+    }).formatToParts(new Date());
 
     const part=name=>parts.find(p=>p.type===name).value;
 
     const date=part("year")+"-"+part("month")+"-"+part("day");
 
-    const zoneText=new Intl.DateTimeFormat("en-US",{
+    const [year,month,day]=date.split("-").map(Number);
 
-      timeZone:"America/Anchorage",
+    const endDate=new Date(Date.UTC(year,month-1,day+40))
 
-      timeZoneName:"longOffset"
+      .toISOString().slice(0,10);
 
-    }).format(now);
+    const url=base+
 
-    const match=zoneText.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);
+      "?lat=64.84"+
 
-    const tz=match?
+      "&lng=-147.72"+
 
-      Number(match[1])+
+      "&date_start="+date+
 
-      (Number(match[2]||0)/60)*(match[1].startsWith("-")?-1:1):
+      "&date_end="+endDate+
 
-      -9;
+      "&timezone=America%2FAnchorage";
 
-    const base="https://aa.usno.navy.mil/api";
+    const controller=new AbortController();
 
-        const getLunarJSON=async (url,label)=>{
+    const timeout=setTimeout(()=>controller.abort(),15000);
 
-      const controller=new AbortController();
-
-      const timeout=setTimeout(()=>controller.abort(),15000);
-
-      try{
-
-        const response=await fetch(url,{
-
-          cache:"no-store",
-
-          signal:controller.signal
-
-        });
-
-        if(!response.ok){
-
-          throw new Error(label+" returned HTTP "+response.status);
-
-        }
-
-        return await response.json();
-
-      }catch(e){
-
-        if(e.name==="AbortError"){
-
-          throw new Error(label+" timed out after 15 seconds");
-
-        }
-
-        throw new Error(label+": "+e.message);
-
-      }finally{
-
-        clearTimeout(timeout);
-
-      }
-
-    };
-
-    let dayData,phaseData;
+    let response;
 
     try{
 
-      dayData=await getLunarJSON(
+      response=await fetch(url,{
 
-        base+"/rstt/oneday?date="+date+
+        cache:"no-store",
 
-        "&coords=64.84%2C-147.72&tz="+tz,
+        signal:controller.signal
 
-        "Moonrise and moonset request"
+      });
 
-      );
+    }finally{
 
-    }catch(e){
-
-      throw e;
+      clearTimeout(timeout);
 
     }
 
-    try{
+    if(!response.ok){
 
-      phaseData=await getLunarJSON(
-
-        base+"/moon/phases/date?date="+date+"&nump=4",
-
-        "Upcoming moon phases request"
-
-      );
-
-    }catch(e){
-
-      throw e;
+      throw new Error("Moon service returned HTTP "+response.status);
 
     }
 
-    const moon=dayData.properties.data;
+    const data=await response.json();
 
-    const moonEvents=moon.moondata||[];
+    if(data.status!=="OK" || !data.results){
 
-    const eventTime=word=>{
-
-      const event=moonEvents.find(e=>
-
-        String(e.phen||"").toLowerCase().includes(word)
-
-      );
-
-      return event&&event.time&&
-
-        !["null","--"].includes(String(event.time).toLowerCase())
-
-        ?event.time:"No time listed";
-
-    };
-
-    $("moonPhase").textContent=moon.curphase||"Unavailable";
-
-    let illumination=Number(moon.fracillum);
-
-    if(Number.isFinite(illumination)){
-
-      if(illumination<=1)illumination*=100;
-
-      $("moonIllum").textContent=Math.round(illumination)+"%";
-
-    }else{
-
-      $("moonIllum").textContent="Unavailable";
+      throw new Error(data.error||"Invalid moon data response");
 
     }
 
-    $("moonRise").textContent=eventTime("rise");
+    const days=Array.isArray(data.results)
 
-    $("moonSet").textContent=eventTime("set");
+      ?data.results:[data.results];
 
-    const phases=phaseData.phasedata||[];
+    const today=days.find(d=>d.date===date);
 
-    const phaseDate=p=>{
+    if(!today){
 
-      const t=String(p.time||"00:00").split(":");
+      throw new Error("Today's moon data was not returned");
 
-      return Date.UTC(
+    }
 
-        Number(p.year),Number(p.month)-1,Number(p.day),
+    $("moonPhase").textContent=
 
-        Number(t[0]||0),Number(t[1]||0)
+      today.moon_phase||"Unavailable";
 
-      );
+    const illumination=Number(today.moon_illumination);
 
-    };
+    $("moonIllum").textContent=
 
-    const upcoming=phases.filter(p=>phaseDate(p)>Date.now());
+      Number.isFinite(illumination)
 
-    const full=upcoming.find(p=>
+        ?Math.round(illumination)+"%"
 
-      String(p.phase).toLowerCase().includes("full")
+        :"Unavailable";
+
+    $("moonRise").textContent=
+
+      today.moon_always_up
+
+        ?"Above horizon all day"
+
+        :today.moon_always_down
+
+          ?"Below horizon all day"
+
+          :today.moonrise||"No rise listed";
+
+    $("moonSet").textContent=
+
+      today.moon_always_up
+
+        ?"Above horizon all day"
+
+        :today.moon_always_down
+
+          ?"Below horizon all day"
+
+          :today.moonset||"No set listed";
+
+    const full=days.find(d=>
+
+      d.date>date&&d.moon_phase==="Full Moon"
 
     );
 
-    const nextNew=upcoming.find(p=>
+    const nextNew=days.find(d=>
 
-      String(p.phase).toLowerCase().includes("new")
+      d.date>date&&d.moon_phase==="New Moon"
 
     );
 
-    const phaseDisplay=p=>p?
+    const displayDate=d=>{
 
-      alaskaTime(new Date(phaseDate(p)).toISOString()):
+      if(!d)return "Unavailable";
 
-      "Unavailable";
+      const [y,m,day]=d.date.split("-");
 
-    $("moonNextFull").textContent=phaseDisplay(full);
+      return m+"/"+day+"/"+y;
 
-    $("moonNextNew").textContent=phaseDisplay(nextNew);
+    };
 
-    $("moonUpdated").textContent =
+    $("moonNextFull").textContent=displayDate(full);
 
-      "Lunar data updated: " + alaskaTime(new Date().toISOString());
+    $("moonNextNew").textContent=displayDate(nextNew);
+
+    $("moonUpdated").innerHTML=
+
+      "Lunar data updated: "+
+
+      new Date().toLocaleTimeString("en-US",{
+
+        timeZone:"America/Anchorage",
+
+        hour:"numeric",
+
+        minute:"2-digit"
+
+      })+
+
+      ' · Data: <a href="https://sunrisesunset.io/" target="_blank" rel="noopener">SunriseSunset.io</a>';
 
   }catch(e){
 
@@ -1471,13 +1435,9 @@ async function update(){
 
     $("moonNextNew").textContent="Unavailable";
 
-    const reason=e.name==="AbortError"
+    $("moonUpdated").textContent=
 
-      ? "USNO request timed out after 15 seconds."
-
-      : "USNO request failed: "+e.message;
-
-    $("moonUpdated").textContent=reason;
+      "Moon data error: "+e.message;
 
   }
 
@@ -1485,7 +1445,11 @@ async function update(){
 
     timeZone:"America/Anchorage",
 
-    year:"numeric",month:"2-digit",day:"2-digit"
+    year:"numeric",
+
+    month:"2-digit",
+
+    day:"2-digit"
 
   }).format(new Date());
 
@@ -1495,9 +1459,7 @@ async function update(){
 
   });
 
-}
-
-updateLunar();
+}updateLunar();
 
 setInterval(updateLunar,6*60*60*1000);
 update();
