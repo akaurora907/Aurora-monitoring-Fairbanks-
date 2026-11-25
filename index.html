@@ -997,6 +997,169 @@ async function update(){
     alaskaTime(new Date().toISOString());
 
 }
+  async function updateLunar(){
+
+  try{
+
+    const now=new Date();
+
+    const parts=new Intl.DateTimeFormat("en-US",{
+
+      timeZone:"America/Anchorage",
+
+      year:"numeric",
+
+      month:"2-digit",
+
+      day:"2-digit"
+
+    }).formatToParts(now);
+
+    const part=name=>parts.find(p=>p.type===name).value;
+
+    const date=part("year")+"-"+part("month")+"-"+part("day");
+
+    const zoneText=new Intl.DateTimeFormat("en-US",{
+
+      timeZone:"America/Anchorage",
+
+      timeZoneName:"longOffset"
+
+    }).format(now);
+
+    const match=zoneText.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);
+
+    const tz=match?
+
+      Number(match[1])+
+
+      (Number(match[2]||0)/60)*(match[1].startsWith("-")?-1:1):
+
+      -9;
+
+    const base="https://aa.usno.navy.mil/api";
+
+    const [dayData,phaseData]=await Promise.all([
+
+      getJSON(base+"/rstt/oneday?date="+date+
+
+        "&coords=64.84%2C-147.72&tz="+tz),
+
+      getJSON(base+"/moon/phases/date?date="+date+"&nump=4")
+
+    ]);
+
+    const moon=dayData.properties.data;
+
+    const moonEvents=moon.moondata||[];
+
+    const eventTime=word=>{
+
+      const event=moonEvents.find(e=>
+
+        String(e.phen||"").toLowerCase().includes(word)
+
+      );
+
+      return event&&event.time&&
+
+        !["null","--"].includes(String(event.time).toLowerCase())
+
+        ?event.time:"No time listed";
+
+    };
+
+    $("moonPhase").textContent=moon.curphase||"Unavailable";
+
+    let illumination=Number(moon.fracillum);
+
+    if(Number.isFinite(illumination)){
+
+      if(illumination<=1)illumination*=100;
+
+      $("moonIllum").textContent=Math.round(illumination)+"%";
+
+    }else{
+
+      $("moonIllum").textContent="Unavailable";
+
+    }
+
+    $("moonRise").textContent=eventTime("rise");
+
+    $("moonSet").textContent=eventTime("set");
+
+    const phases=phaseData.phasedata||[];
+
+    const phaseDate=p=>{
+
+      const t=String(p.time||"00:00").split(":");
+
+      return Date.UTC(
+
+        Number(p.year),Number(p.month)-1,Number(p.day),
+
+        Number(t[0]||0),Number(t[1]||0)
+
+      );
+
+    };
+
+    const upcoming=phases.filter(p=>phaseDate(p)>Date.now());
+
+    const full=upcoming.find(p=>
+
+      String(p.phase).toLowerCase().includes("full")
+
+    );
+
+    const nextNew=upcoming.find(p=>
+
+      String(p.phase).toLowerCase().includes("new")
+
+    );
+
+    const phaseDisplay=p=>p?
+
+      alaskaTime(new Date(phaseDate(p)).toISOString()):
+
+      "Unavailable";
+
+    $("moonNextFull").textContent=phaseDisplay(full);
+
+    $("moonNextNew").textContent=phaseDisplay(nextNew);
+
+    $("moonUpdated").textContent=
+
+      "Lunar data updated: "+alaskaTime(new Date().toISOString());
+
+  }catch(e){
+
+    $("moonPhase").textContent="Lunar data unavailable";
+
+    $("moonUpdated").textContent="Could not retrieve lunar data";
+
+  }
+
+  const localParts=new Intl.DateTimeFormat("en-CA",{
+
+    timeZone:"America/Anchorage",
+
+    year:"numeric",month:"2-digit",day:"2-digit"
+
+  }).format(new Date());
+
+  document.querySelectorAll(".event-card[data-date]").forEach(card=>{
+
+    card.hidden=card.dataset.date<localParts;
+
+  });
+
+}
+
+updateLunar();
+
+setInterval(updateLunar,6*60*60*1000);
 update();
 
 setInterval(update,60000);
